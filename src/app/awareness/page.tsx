@@ -19,7 +19,8 @@ import {
   HelpCircle,
   Bot,
   Send,
-  X
+  X,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -48,6 +49,7 @@ export default function PublicAwarenessPortal() {
   const [chatMessages, setChatMessages] = useState([])
   const [chatInput, setChatInput] = useState('')
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const [isChatLoading, setIsChatLoading] = useState(false)
   const [feedback, setFeedback] = useState({ name: '', email: '', message: '' })
 
   const lawsAndRights = [
@@ -287,6 +289,48 @@ export default function PublicAwarenessPortal() {
     { service: "Fire Emergency", number: "101", available: "24/7" }
   ]
 
+  // Function to format the API response
+  const formatApiResponse = (response: string): string[] => {
+    // Remove any introductory phrases
+    let formatted = response.replace(/^(here is|here's|the answer is|the following is|below is|according to|based on|in conclusion|in summary|to answer your question|to provide an answer|in response to|regarding|about|concerning|as for|with respect to|in relation to)\s+/gi, '');
+    
+    // Remove any concluding phrases
+    formatted = formatted.replace(/(\s+in conclusion|\s+in summary|\s+to summarize|\s+finally|\s+lastly|\s+in closing|\s+to wrap up|\s+overall|\s+all in all|\s+in short|\s+in brief)$/gi, '');
+    
+    // Replace any asterisks (*) with clean bullet points
+    formatted = formatted.replace(/\*\s*/g, '• ');
+    
+    // If there are no bullet points but the text has numbered lists, convert them
+    formatted = formatted.replace(/^\d+\.\s*/gm, '• ');
+    
+    // Ensure each bullet point is on a new line
+    formatted = formatted.replace(/•\s*/g, '\n• ');
+    
+    // Remove any leading/trailing whitespace
+    formatted = formatted.trim();
+    
+    // If it's still a single paragraph without bullet points, create them from sentences
+    if (!formatted.includes('•')) {
+      // Try to split by sentences
+      const sentences = formatted.split('. ').filter(s => s.trim());
+      if (sentences.length > 1) {
+        formatted = sentences.map(s => `• ${s.trim()}.`).join('\n');
+      } else {
+        formatted = `• ${formatted}`;
+      }
+    }
+    
+    // Remove any remaining asterisks
+    formatted = formatted.replace(/\*/g, '');
+    
+    // Split into bullet points array for easier rendering
+    const bulletPoints = formatted.split('\n')
+      .filter(point => point.trim())
+      .map(point => point.replace(/^•\s*/, '').trim());
+    
+    return bulletPoints;
+  }
+
   const handleChatSubmit = async () => {
     if (chatInput.trim()) {
       const userMessage = {
@@ -296,29 +340,41 @@ export default function PublicAwarenessPortal() {
         timestamp: new Date().toLocaleTimeString()
       }
       setChatMessages([...chatMessages, userMessage])
+      setChatInput('')
+      setIsChatLoading(true)
       
       try {
-        const response = await fetch('/api/awareness-chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ message: chatInput }),
-        })
+        // Modified query to include instructions for Gemini API
+        const formattedQuery = `Provide a direct answer to this legal question without introduction: "${chatInput}". Format your response as bullet points without using "*" characters. Be concise and relevant to Indian law.`
+        
+        // This is the "link" to your backend.
+        // Make sure your Spring Boot app is running on http://localhost:8080
+        const backendUrl = `http://localhost:8081/api/laws/ask?query=${encodeURIComponent(formattedQuery)}`
 
-        const data = await response.json()
+        // Make the GET request to your backend
+        const response = await fetch(backendUrl)
 
-        if (response.ok && data.success) {
-          const aiResponse = {
-            id: Date.now() + 1,
-            text: data.response,
-            sender: 'bot',
-            timestamp: new Date().toLocaleTimeString()
-          }
-          setChatMessages(prev => [...prev, aiResponse])
-        } else {
-          throw new Error(data.error || 'Failed to get response')
+        // Get the plain text response
+        let textResponse = await response.text()
+
+        if (!response.ok) {
+          // Handle errors from the backend (like 500 errors)
+          throw new Error(textResponse || 'An error occurred while fetching from the backend.')
         }
+
+        // Process the response to format it properly
+        const formattedResponse = formatApiResponse(textResponse)
+        
+        // Create a bot response with the formatted bullet points
+        const aiResponse = {
+          id: Date.now() + 1,
+          text: formattedResponse,
+          sender: 'bot',
+          timestamp: new Date().toLocaleTimeString(),
+          isBulletPoints: true
+        }
+        
+        setChatMessages(prev => [...prev, aiResponse])
       } catch (error) {
         console.error('Chat error:', error)
         const errorMessage = {
@@ -328,9 +384,9 @@ export default function PublicAwarenessPortal() {
           timestamp: new Date().toLocaleTimeString()
         }
         setChatMessages(prev => [...prev, errorMessage])
+      } finally {
+        setIsChatLoading(false)
       }
-      
-      setChatInput('')
     }
   }
 
@@ -795,7 +851,27 @@ export default function PublicAwarenessPortal() {
                           : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none shadow-sm'
                       }`}
                     >
-                      <p className="text-sm leading-relaxed">{message.text}</p>
+                      {message.isBulletPoints ? (
+                        <ul className="space-y-2 text-sm leading-relaxed">
+                          {Array.isArray(message.text) ? (
+                            message.text.map((point, index) => (
+                              <li key={index} className="flex items-start">
+                                <span className="text-blue-600 mr-2 mt-0.5 flex-shrink-0">•</span>
+                                <span>{point}</span>
+                              </li>
+                            ))
+                          ) : (
+                            message.text.split('\n').map((point, index) => (
+                              <li key={index} className="flex items-start">
+                                <span className="text-blue-600 mr-2 mt-0.5 flex-shrink-0">•</span>
+                                <span>{point.replace(/^•\s*/, '')}</span>
+                              </li>
+                            ))
+                          )}
+                        </ul>
+                      ) : (
+                        <p className="text-sm leading-relaxed">{message.text}</p>
+                      )}
                       <p className={`text-xs mt-1 ${
                         message.sender === 'user' ? 'text-blue-100' : 'text-gray-400'
                       }`}>
@@ -810,6 +886,20 @@ export default function PublicAwarenessPortal() {
                   </div>
                 ))
               )}
+              
+              {isChatLoading && (
+                <div className="flex justify-start animate-in slide-in-from-bottom-2 duration-300">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                    <Bot className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-bl-none shadow-sm p-3 max-w-[75%]">
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                      <p className="text-sm text-gray-600">Thinking...</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Chat Input */}
@@ -819,15 +909,17 @@ export default function PublicAwarenessPortal() {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder="Ask about your legal rights..."
-                  onKeyPress={(e) => e.key === 'Enter' && handleChatSubmit()}
+                  onKeyPress={(e) => e.key === 'Enter' && !isChatLoading && handleChatSubmit()}
                   className="flex-1 border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-full"
+                  disabled={isChatLoading}
                 />
                 <Button 
                   onClick={handleChatSubmit} 
                   size="sm" 
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-full w-10 h-10 p-0 transform hover:scale-105 transition-all duration-200"
+                  disabled={isChatLoading}
                 >
-                  <Send className="h-4 w-4" />
+                  {isChatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
               <div className="flex items-center justify-between mt-2">

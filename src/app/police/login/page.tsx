@@ -59,7 +59,7 @@ export default function PoliceLogin() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-full mb-4 shadow-lg">
             <Shield className="h-10 w-10 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Smart FIR System</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Nyaya AI</h1>
           <p className="text-sm text-gray-600">Police Department Portal</p>
         </div>
 

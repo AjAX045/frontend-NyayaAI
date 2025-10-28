@@ -9,58 +9,91 @@ import {
   FileText, 
   HelpCircle,
   ArrowRight,
-  Menu,
-  X,
   Users,
   Scale,
   Gavel,
   Heart,
   Brain,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 
 export default function Home() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isScrolled, setIsScrolled] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [showPoliceWarning, setShowPoliceWarning] = useState(false)
+  const [searchResult, setSearchResult] = useState<string[] | string>('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [hasSearched, setHasSearched] = useState(false)
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  const handlePolicePortalClick = (e) => {
+  const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setShowPoliceWarning(true)
+
+    if (!searchQuery.trim()) return
+
+    setIsLoading(true)
+    setSearchError(null)
+    setSearchResult('')
+    setHasSearched(true)
+
+    try {
+      const formattedQuery = `Provide a direct answer to this legal question without introduction: "${searchQuery}". Format your response as bullet points without using "*" characters. Be concise and relevant to Indian law.`
+      
+      const backendUrl = `http://localhost:8081/api/laws/ask?query=${encodeURIComponent(formattedQuery)}`
+
+      const response = await fetch(backendUrl)
+      let textResponse = await response.text()
+
+      if (!response.ok) {
+        throw new Error(textResponse || 'An error occurred while fetching from the backend.')
+      }
+
+      const formattedLines: string[] = formatApiResponse(textResponse)
+      const resultString = formattedLines.join('\n')
+      setSearchResult(resultString)
+
+    } catch (err) {
+      console.error("Search failed:", err)
+      setSearchError(err instanceof Error ? err.message : 'An unknown error occurred.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const proceedToPolicePortal = () => {
-    setShowPoliceWarning(false)
-    window.location.href = '/police/login'
+  const formatApiResponse = (response: string): string[] => {
+    let formatted = response.replace(/^(here is|here's|the answer is|the following is|below is|according to|based on|in conclusion|in summary|to answer your question|to provide an answer|in response to|regarding|about|concerning|as for|with respect to|in relation to)\s+/gi, '');
+    
+    formatted = formatted.replace(/(\s+in conclusion|\s+in summary|\s+to summarize|\s+finally|\s+lastly|\s+in closing|\s+to wrap up|\s+overall|\s+all in all|\s+in short|\s+in brief)$/gi, '');
+    
+    formatted = formatted.replace(/\*\s*/g, '• ');
+    
+    formatted = formatted.replace(/^\d+\.\s*/gm, '• ');
+    
+    formatted = formatted.replace(/•\s*/g, '\n• ');
+    
+    formatted = formatted.trim();
+    
+    if (!formatted.includes('•')) {
+      const sentences = formatted.split('. ').filter(s => s.trim());
+      if (sentences.length > 1) {
+        formatted = sentences.map(s => `• ${s.trim()}.`).join('\n');
+      } else {
+        formatted = `• ${formatted}`;
+      }
+    }
+    
+    formatted = formatted.replace(/\*/g, '');
+    
+    const bulletPoints = formatted.split('\n')
+      .filter(point => point.trim())
+      .map(point => point.replace(/^•\s*/, '').trim());
+    
+    return bulletPoints;
   }
-
-  const navItems = [
-    { name: 'Home', href: '/' },
-    { name: 'Public Awareness', href: '/awareness' },
-    { name: 'Search Sections', href: '/search' },
-    { name: 'FAQs', href: '/faqs' },
-  ]
 
   const features = [
     {
@@ -116,87 +149,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation Header */}
-      <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white/95 backdrop-blur-md shadow-md' : 'bg-white'
-      }`}>
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full">
-                <Shield className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Smart FIR</h1>
-                <p className="text-xs text-gray-600">Legal Awareness</p>
-              </div>
-            </Link>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-
-            {/* Right side buttons */}
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="hidden md:flex"
-                onClick={handlePolicePortalClick}
-              >
-                Police Portal
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="md:hidden"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-              >
-                {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden bg-white border-t">
-            <nav className="container mx-auto px-4 py-4 space-y-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="block py-2 text-gray-700 hover:text-blue-600 transition-colors font-medium"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
-              <button
-                className="block py-2 text-blue-600 font-medium text-left w-full"
-                onClick={(e) => {
-                  e.preventDefault()
-                  setIsMenuOpen(false)
-                  handlePolicePortalClick(e)
-                }}
-              >
-                Police Portal
-              </button>
-            </nav>
-          </div>
-        )}
-      </header>
-
       {/* Hero Section with Search */}
       <section className="relative pt-24 pb-20 px-4 overflow-hidden">
         {/* Background decoration */}
@@ -220,36 +172,118 @@ export default function Home() {
             </p>
             
             {/* Search Bar */}
-            <div className="max-w-3xl mx-auto mb-8">
-              <div className="bg-white rounded-2xl shadow-lg p-2 border border-gray-100">
-                <div className="flex items-center">
-                  <div className="flex-1 flex items-center">
-                    <Search className="h-5 w-5 text-gray-400 ml-4 mr-3" />
-                    <Input
-                      placeholder="Search for legal sections, rights, FIR procedures, or any legal topic..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="border-0 focus:ring-0 text-lg py-3 px-0"
-                    />
-                  </div>
-                  <Button className="bg-blue-600 hover:bg-blue-700 rounded-xl m-1 px-6 py-3">
-                    Search
-                  </Button>
-                </div>
+    <form onSubmit={handleSearchSubmit} className="max-w-3xl mx-auto mb-8">
+      <div className="search-container bg-white rounded-2xl shadow-lg p-2 border border-gray-100 transition-all duration-200">
+        <div className="flex items-center">
+          <div className="flex-1 flex items-center">
+            <Search className="h-5 w-5 text-gray-400 ml-4 mr-3" />
+            <Input
+              placeholder="Search for legal sections, rights, FIR procedures, or any legal topic..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input border-0 focus:ring-0 text-lg py-3 px-0"
+              disabled={isLoading}
+            />
+          </div>
+          <Button 
+            type="submit" 
+            className="bg-blue-600 hover:bg-blue-700 rounded-xl m-1 px-6 py-3"
+            disabled={isLoading}
+          >
+            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Search'}
+          </Button>
+        </div>
+      </div>
+      <div className="flex flex-wrap justify-center gap-2 mt-4">
+        <span className="text-sm text-gray-500">Popular:</span>
+        {['Section 420', 'Domestic Violence', 'Property Rights', 'Cyber Crime'].map((tag) => (
+          <button
+            key={tag}
+            onClick={(e) => {
+              e.preventDefault();
+              setSearchQuery(tag);
+              handleSearchSubmit(e);
+            }}
+            className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-full transition-colors">
+            {tag}
+          </button>
+        ))}
+      </div>
+    </form>
+
+            {/* Search Results Section */}
+            {hasSearched && (
+              <div className="max-w-3xl mx-auto mt-8 animate-in fade-in slide-in-from-top-5 duration-300">
+                {isLoading && (
+                  <Card className="shadow-lg">
+                    <CardContent className="flex flex-col items-center justify-center gap-4 py-12">
+                      <Loader2 className="h-10 w-10 text-blue-600 animate-spin" />
+                      <p className="text-gray-600">Please wait, fetching your answer...</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {searchError && (
+                  <Card className="shadow-lg border-red-200 bg-red-50">
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+                        <div>
+                          <h4 className="font-bold text-red-800 mb-2">Error</h4>
+                          <p className="text-red-700">{searchError}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {searchResult && !isLoading && (
+                  <Card className="shadow-lg">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl">Search Results</CardTitle>
+                        <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
+                          For: "{searchQuery}"
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg">
+                        <ul className="space-y-3 text-gray-800">
+                          {Array.isArray(searchResult) ? (
+                            searchResult.map((point, index) => (
+                              <li key={index} className="flex items-start">
+                                <span className="text-blue-600 mr-3 mt-1 flex-shrink-0">•</span>
+                                <span className="leading-relaxed">{point}</span>
+                              </li>
+                            ))
+                          ) : (
+                            searchResult.split('\n').map((point, index) => (
+                              <li key={index} className="flex items-start">
+                                <span className="text-blue-600 mr-3 mt-1 flex-shrink-0">•</span>
+                                <span className="leading-relaxed">{point.replace(/^•\s*/, '')}</span>
+                              </li>
+                            ))
+                          )}
+                        </ul>
+                      </div>
+                      <div className="mt-4 flex justify-end">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setSearchResult('');
+                            setHasSearched(false);
+                            setSearchQuery('');
+                          }}
+                        >
+                          Clear Results
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
-              <div className="flex flex-wrap justify-center gap-2 mt-4">
-                <span className="text-sm text-gray-500">Popular:</span>
-                {['Section 420', 'Domestic Violence', 'Property Rights', 'Cyber Crime'].map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => setSearchQuery(tag)}
-                    className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-full transition-colors"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </section>
@@ -266,6 +300,40 @@ export default function Home() {
                 <div className="text-3xl font-bold mb-1">{stat.value}</div>
                 <div className="text-white/80 text-sm">{stat.label}</div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 px-4">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Explore Our Features
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Everything you need to understand your rights and navigate the legal system
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {features.map((feature, index) => (
+              <Link key={index} href={feature.href}>
+                <Card className="h-full hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
+                  <CardHeader className="text-center">
+                    <div className="flex justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                      {feature.icon}
+                    </div>
+                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-center text-gray-600">
+                      {feature.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
@@ -401,63 +469,12 @@ export default function Home() {
                 <strong>Disclaimer:</strong> This is an awareness platform. FIRs can be filed only by authorized officers.
               </p>
               <p className="text-gray-500 text-xs">
-                © 2024 Smart FIR System. All rights reserved. | Privacy Policy | Terms of Service
+                © 2024 Nyaya AI. All rights reserved. | Privacy Policy | Terms of Service
               </p>
             </div>
           </div>
         </div>
       </footer>
-
-      {/* Police Portal Warning Dialog */}
-      <Dialog open={showPoliceWarning} onOpenChange={setShowPoliceWarning}>
-        <DialogContent className="max-w-md bg-white border border-gray-200 shadow-xl">
-          <DialogHeader>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-amber-600" />
-              </div>
-              <DialogTitle className="text-xl">Police Portal Access</DialogTitle>
-            </div>
-            <DialogDescription className="text-gray-600 text-base">
-              This portal is restricted to <strong>authorized police personnel only</strong>. 
-              Normal citizens are not permitted to access this system.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <h4 className="font-semibold text-amber-800 mb-2">⚠️ Important Notice:</h4>
-              <ul className="text-sm text-amber-700 space-y-1">
-                <li>• Unauthorized access is prohibited by law</li>
-                <li>• All access attempts are logged and monitored</li>
-                <li>• Violators may face legal consequences</li>
-              </ul>
-            </div>
-            
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm text-blue-700">
-                <strong>Citizens:</strong> Please use the Public Awareness section for legal information and resources.
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex gap-3 pt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowPoliceWarning(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={proceedToPolicePortal}
-              className="flex-1 bg-amber-600 hover:bg-amber-700"
-            >
-              I Am Police Personnel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
