@@ -42,89 +42,109 @@ interface FIRData {
   complainant: string
   type: string
   date: string
-  status: 'pending' | 'under-review' | 'resolved'
+  status: 'pending' | 'solved'
 }
 
-export default function PoliceDashboard() {
+export default function PoliceDashboard({ searchQuery = '' }) {
   const [stats, setStats] = useState({
     totalFIRs: 0,
-    pendingReviews: 0,
-    feedbackSubmitted: 0
+    pendingFIRs: 0,
+    solvedFIRs: 0
   })
   const [recentFIRs, setRecentFIRs] = useState<FIRData[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Simulate data loading
-    setTimeout(() => {
+  const fetchDashboardData = async () => {
+    try {
+      // 1. Fetch stats
+      const statsRes = await fetch(
+        'http://localhost:8081/api/police/dashboard/stats'
+      )
+      const statsData = await statsRes.json()
+
       setStats({
-        totalFIRs: 1247,
-        pendingReviews: 23,
-        feedbackSubmitted: 156
+        totalFIRs: statsData.totalFirs,
+        pendingFIRs: statsData.pendingFirs,
+        solvedFIRs: statsData.solvedFirs
       })
-      
-      setRecentFIRs([
-        {
-          id: 'FIR-2024-001',
-          complainant: 'Rahul Sharma',
-          type: 'Theft',
-          date: '2024-01-15',
-          status: 'pending'
-        },
-        {
-          id: 'FIR-2024-002',
-          complainant: 'Priya Patel',
-          type: 'Assault',
-          date: '2024-01-14',
-          status: 'under-review'
-        },
-        {
-          id: 'FIR-2024-003',
-          complainant: 'Amit Kumar',
-          type: 'Fraud',
-          date: '2024-01-14',
-          status: 'resolved'
-        },
-        {
-          id: 'FIR-2024-004',
-          complainant: 'Sneha Reddy',
-          type: 'Harassment',
-          date: '2024-01-13',
-          status: 'pending'
-        },
-        {
-          id: 'FIR-2024-005',
-          complainant: 'Vikram Singh',
-          type: 'Property Dispute',
-          date: '2024-01-13',
-          status: 'under-review'
-        }
-      ])
+
+      // 2. Fetch recent FIRs (API we will create next)
+      const recentRes = await fetch(
+        'http://localhost:8081/api/police/dashboard/recent-firs'
+      )
+      const recentData = await recentRes.json()
+
+      const mappedRecentFIRs: FIRData[] = recentData.map((fir: any) => ({
+        id: String(fir.id),
+        complainant: fir.complainantName,
+        type: fir.incidentType,
+        date: fir.createdAt
+        ? new Date(fir.createdAt).toLocaleDateString('en-IN')
+        : '—',
+
+
+        status: fir.status === 'SOLVED' ? 'solved' : 'pending'
+      }))
+
+      setRecentFIRs(mappedRecentFIRs)
+    } catch (error) {
+      console.error('Dashboard API error:', error)
+    } finally {
       setIsLoading(false)
-    }, 1500)
-  }, [])
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      'pending': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100',
-      'under-review': 'bg-blue-100 text-blue-800 hover:bg-blue-100',
-      'resolved': 'bg-green-100 text-green-800 hover:bg-green-100'
-    }
-    return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800'
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-600" />
-      case 'under-review':
-        return <AlertTriangle className="h-4 w-4 text-blue-600" />
-      case 'resolved':
-        return <CheckCircle className="h-4 w-4 text-green-600" />
-      default:
-        return <Clock className="h-4 w-4 text-gray-600" />
     }
   }
+
+  fetchDashboardData()
+}, [])
+
+  const handleChangeStatus = async (id: string, status: 'PENDING' | 'SOLVED') => {
+  try {
+    const res = await fetch(`http://localhost:8081/api/police/dashboard/fir/${id}/status?status=${status}`, {
+      method: 'PATCH'
+    });
+
+    if (!res.ok) throw new Error('Failed to update status');
+
+    // Update local state to reflect change immediately
+    setRecentFIRs((prev) =>
+      prev.map((fir) =>
+        fir.id === id ? { ...fir, status: status.toLowerCase() as 'pending' | 'solved' } : fir
+      )
+    );
+
+
+    // Update dashboard stats too
+    const statsRes = await fetch('http://localhost:8081/api/police/dashboard/stats');
+    const statsData = await statsRes.json();
+    setStats({
+      totalFIRs: statsData.totalFirs,
+      pendingFIRs: statsData.pendingFirs,
+      solvedFIRs: statsData.solvedFirs
+    });
+
+  } catch (error) {
+    console.error('Error updating status:', error);
+    alert('Failed to update FIR status');
+  }
+};
+
+
+
+  const getStatusBadge = (status: 'pending' | 'solved') => {
+    return status === 'solved'
+      ? 'bg-green-100 text-green-800 hover:bg-green-100'
+      : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
+  }
+
+
+  const getStatusIcon = (status: 'pending' | 'solved') => {
+   return status === 'solved'
+    ? <CheckCircle className="h-4 w-4 text-green-600" />
+    : <Clock className="h-4 w-4 text-yellow-600" />
+  }
+  
+  
 
   if (isLoading) {
     return (
@@ -140,13 +160,47 @@ export default function PoliceDashboard() {
       </PoliceLayout>
     )
   }
+  const fetchAllFIRs = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('http://localhost:8081/api/police/dashboard/all-firs');
+      const data = await res.json();
+
+      // Map backend data to FIRData interface
+      const firs: FIRData[] = data.map((fir: any) => ({
+        id: fir.id.toString(),
+        complainant: fir.complainantName,
+        type: fir.incidentType,
+        status: fir.status || 'pending', // fallback if status empty
+        date: fir.createdAt
+      }));
+
+      setRecentFIRs(firs); // reuse the same table
+    } catch (error) {
+      console.error('Error fetching all FIRs:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredFIRs = recentFIRs.filter((fir) => {
+   const q = searchQuery.toLowerCase()
+
+    return (
+      fir.id.toString().includes(q) ||
+      fir.complainant.toLowerCase().includes(q) ||
+      fir.type.toLowerCase().includes(q)
+    )
+  })
+
+
 
   return (
-    <PoliceLayout>
+     <PoliceLayout>
       <div className="p-6">
         {/* Welcome Message */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome, Officer Smith</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Welcome, Officer Ajay</h1>
           <p className="text-gray-600">Here's your dashboard overview</p>
         </div>
 
@@ -169,19 +223,19 @@ export default function PoliceDashboard() {
               <Clock className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{stats.pendingReviews}</div>
+              <div className="text-2xl font-bold text-orange-600">{stats.pendingFIRs}</div>
               <p className="text-xs text-gray-600 mt-1">Requires attention</p>
             </CardContent>
           </Card>
 
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">Feedback Submitted</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">Solved FIRs</CardTitle>
               <MessageSquare className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.feedbackSubmitted}</div>
-              <p className="text-xs text-gray-600 mt-1">AI improvements</p>
+              <div className="text-2xl font-bold text-green-600">{stats.solvedFIRs}</div>
+              <p className="text-xs text-gray-600 mt-1">FIRs solved</p>
             </CardContent>
           </Card>
         </div>
@@ -204,9 +258,11 @@ export default function PoliceDashboard() {
                 <CardTitle>Recent FIRs</CardTitle>
                 <CardDescription>Latest filed First Information Reports</CardDescription>
               </div>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
+              <Button
+                onClick={() => fetchAllFIRs()}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                View All FIRs
               </Button>
             </div>
           </CardHeader>
@@ -257,13 +313,17 @@ export default function PoliceDashboard() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => handleChangeStatus(fir.id, 'PENDING')}>
+                              <Clock className="mr-2 h-4 w-4" />
+                              Mark as Pending
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleChangeStatus(fir.id, 'SOLVED')}>
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              Mark as Solved
+                            </DropdownMenuItem>
                             <DropdownMenuItem>
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit FIR
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

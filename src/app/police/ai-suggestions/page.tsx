@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect,useRef  } from 'react'
 import PoliceLayout from '@/components/police-layout'
 import { 
   Brain, 
@@ -36,6 +36,8 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+
+
 
 interface AIPrediction {
   id: string
@@ -73,9 +75,12 @@ export default function AISuggestions() {
   const [inputText, setInputText] = useState('')
   const [selectedPredictions, setSelectedPredictions] = useState<string[]>([])
   const [isSaving, setIsSaving] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [activeTab, setActiveTab] = useState('input')
   const [mounted, setMounted] = useState(false)
+  const hasSavedRef = useRef(false)
+
   
   // Manual section addition states
   const [showManualForm, setShowManualForm] = useState(false)
@@ -108,6 +113,7 @@ export default function AISuggestions() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
 
   // Check for complaint text and FIR data from URL params on mount
   useEffect(() => {
@@ -305,51 +311,58 @@ export default function AISuggestions() {
   }
 
   const handleSaveChanges = async () => {
-    setIsSaving(true)
-    try {
-      // Get selected predictions (both AI and manual)
-      const selectedSections = predictions.filter(p => selectedPredictions.includes(p.id))
-      
-      if (selectedSections.length === 0) {
-        alert('Please select at least one legal section before saving.')
-        setIsSaving(false)
-        return
-      }
-      
-      // Prepare FIR data for saving
-      const firData = {
-        complaintText,
-        aiPredictions: predictions.filter(p => !p.isManual),
-        manualSections: predictions.filter(p => p.isManual),
-        selectedSections,
-        aiFeedbacks, // Include feedback data for model training
-        ...firFormData, // Include FIR form data if available
-        timestamp: new Date().toISOString()
-      }
+  if (isSaved) return // 🔒 extra safety
 
-      const response = await fetch('/api/save-fir', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(firData),
-      })
+  setIsSaving(true)
+  try {
+    // 1️⃣ Filter selected sections
+    const selectedSections = predictions
+      .filter(p => selectedPredictions.includes(p.id))
+      .map(p => ({
+        sectionNumber: p.correctedSection || p.sectionNumber,
+        title: p.title,
+        description: p.description,
+        punishment: p.punishment,
+        category: p.category
+      }))
 
-      const result = await response.json()
-      
-      if (result.success) {
-        alert(`FIR saved successfully!\nFIR Number: ${result.firNumber}\nFIR ID: ${result.firId}`)
-        router.push('/police/register-fir')
-      } else {
-        throw new Error(result.error || 'Failed to save FIR')
-      }
-    } catch (error) {
-      console.error('Save FIR error:', error)
-      alert('Failed to save FIR. Please try again.')
-    } finally {
-      setIsSaving(false)
+    if (selectedSections.length === 0) {
+      alert('Please select at least one legal section before saving.')
+      return
     }
+
+    // 2️⃣ Prepare payload
+    const firDataToSend = {
+      ...firFormData,
+      complaintText,
+      predictedSections: JSON.stringify(selectedSections),
+      aiFeedbacks
+    }
+
+    // 3️⃣ API call
+    const response = await fetch('http://localhost:8081/api/firs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(firDataToSend)
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to save FIR')
+    }
+
+    const result = await response.json()
+
+    // ✅ SUCCESS
+    alert(`FIR saved successfully!\nFIR ID: ${result.id}`)
+    setIsSaved(true) // ✅ THIS WAS MISSING
+  } catch (error) {
+    console.error('Save FIR error:', error)
+    alert('Failed to save FIR. Please try again.')
+  } finally {
+    setIsSaving(false)
   }
+}
+
 
   // Manual section functions
   const handleAddManualSection = () => {
@@ -1003,10 +1016,15 @@ export default function AISuggestions() {
                                 {searchParams.get('complaint') && (
                                   <Button 
                                     onClick={handleSaveChanges}
-                                    disabled={selectedCount === 0 || isSaving}
+                                    disabled={selectedCount === 0 || isSaving || isSaved}
                                     className="hover-lift"
                                   >
-                                    {isSaving ? (
+                                    {isSaved ? (
+                                          <>
+                                            <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                                            Saved
+                                          </>
+                                        ) :isSaving ? (
                                       <>
                                         <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
                                         Saving...

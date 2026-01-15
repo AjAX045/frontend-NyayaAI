@@ -19,6 +19,8 @@ export default function Header() {
   const [showPoliceWarning, setShowPoliceWarning] = useState(false)
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 })
   const pathname = usePathname()
+  const hideCitizenLinks = pathname.startsWith('/police')
+
   const navRefs = useRef<{ [key: string]: HTMLAnchorElement | null }>({})
 
   const navItems = [
@@ -98,7 +100,7 @@ export default function Header() {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8 relative">
-              {navItems.map((item) => (
+              {!hideCitizenLinks && navItems.map((item) => (
                 <Link
                   key={item.name}
                   ref={(el) => { navRefs.current[item.href] = el }}
@@ -110,17 +112,20 @@ export default function Header() {
                   {item.name}
                 </Link>
               ))}
-              
+
               {/* Animated Indicator */}
-              <div 
-                className="absolute bottom-0 h-1 bg-gradient-to-r from-blue-500 to-blue-700 rounded-full transition-all duration-300 ease-out shadow-lg"
-                style={{
-                  left: `${indicatorStyle.left}px`,
-                  width: `${indicatorStyle.width}px`,
-                  opacity: indicatorStyle.opacity
-                }}
-              />
+              {!hideCitizenLinks && (
+                <div 
+                  className="absolute bottom-0 h-1 bg-gradient-to-r from-blue-500 to-blue-700 rounded-full transition-all duration-300 ease-out shadow-lg"
+                  style={{
+                    left: `${indicatorStyle.left}px`,
+                    width: `${indicatorStyle.width}px`,
+                    opacity: indicatorStyle.opacity
+                  }}
+                />
+              )}
             </nav>
+
 
             {/* Right side buttons */}
             <div className="flex items-center space-x-4">
@@ -146,33 +151,36 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden bg-white border-t">
-            <nav className="container mx-auto px-4 py-4 space-y-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`block py-2 text-gray-700 hover:text-blue-600 transition-colors font-medium ${
-                    pathname === item.href ? 'text-blue-600' : ''
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
-              <button
-                className="block py-2 text-blue-600 font-medium text-left w-full"
-                onClick={(e) => {
-                  e.preventDefault()
-                  setIsMenuOpen(false)
-                  handlePolicePortalClick(e)
-                }}
+        <div className="md:hidden bg-white border-t">
+          <nav className="container mx-auto px-4 py-4 space-y-2">
+            {!hideCitizenLinks && navItems.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`block py-2 text-gray-700 hover:text-blue-600 transition-colors font-medium ${
+                  pathname === item.href ? 'text-blue-600' : ''
+                }`}
+                onClick={() => setIsMenuOpen(false)}
               >
-                Police Portal
-              </button>
-            </nav>
-          </div>
-        )}
+                {item.name}
+              </Link>
+            ))}
+
+            {/* Police Portal button stays visible */}
+            <button
+              className="block py-2 text-blue-600 font-medium text-left w-full"
+              onClick={(e) => {
+                e.preventDefault()
+                setIsMenuOpen(false)
+                handlePolicePortalClick(e)
+              }}
+            >
+              Police Portal
+            </button>
+          </nav>
+        </div>
+      )}
+
       </header>
 
       {/* Police Portal Warning Dialog */}

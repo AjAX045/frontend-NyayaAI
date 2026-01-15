@@ -9,6 +9,8 @@ import {
   LogOut, 
   Menu, 
   X,
+  PanelLeftOpen,
+  PanelLeftClose,
   Search,
   Bell,
   User,
@@ -47,6 +49,7 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const pathname = usePathname()
+  const [searchQuery, setSearchQuery] = useState('')
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -72,8 +75,11 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
             <div className={`flex items-center space-x-3 transition-all duration-300 ${sidebarCollapsed ? 'lg:justify-center' : ''}`}>
               <Shield className="h-8 w-8 flex-shrink-0" />
               <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
-                <h1 className="text-lg font-bold">Smart FIR</h1>
-                <p className="text-xs text-white/80">System</p>
+                <h1 className="text-lg font-bold">Nyaya AI</h1>
+                <p className="text-xs text-white/80 leading-tight">
+                  Intelligent FIR Assistance System
+                </p>
+
               </div>
             </div>
             {/* Only show mobile close button */}
@@ -185,6 +191,8 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
                   </>
                 )}
               </Button>
+
+
               
               {/* Search */}
               <div className="relative max-w-md flex-1">
