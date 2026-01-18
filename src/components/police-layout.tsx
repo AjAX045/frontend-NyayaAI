@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   LayoutDashboard, 
   FileText, 
@@ -9,14 +9,12 @@ import {
   LogOut, 
   Menu, 
   X,
-  PanelLeftOpen,
-  PanelLeftClose,
   Search,
   Bell,
   User,
   Shield,
-  BarChart3,
-  Settings
+  ChevronsLeft, // Added for better collapse icon
+  ChevronsRight // Added for better expand icon
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,7 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 const navigation = [
   { name: 'Dashboard', href: '/police', icon: LayoutDashboard },
@@ -49,7 +47,25 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const pathname = usePathname()
-  const [searchQuery, setSearchQuery] = useState('')
+  const router = useRouter()
+
+  // ENHANCEMENT: Persist sidebar state using localStorage
+  useEffect(() => {
+    // Load saved state on mount
+    const savedState = localStorage.getItem('sidebarCollapsed')
+    if (savedState !== null) {
+      setSidebarCollapsed(JSON.parse(savedState))
+    }
+  }, [])
+
+  useEffect(() => {
+    // Save state whenever it changes
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed))
+  }, [sidebarCollapsed])
+
+  const handleLogout = () => {
+    router.push('/police/login')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -74,15 +90,14 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
           <div className="flex h-16 items-center justify-between px-6 border-b border-white/20 shrink-0">
             <div className={`flex items-center space-x-3 transition-all duration-300 ${sidebarCollapsed ? 'lg:justify-center' : ''}`}>
               <Shield className="h-8 w-8 flex-shrink-0" />
-              <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
+              <div className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
                 <h1 className="text-lg font-bold">Nyaya AI</h1>
-                <p className="text-xs text-white/80 leading-tight">
+                {/* Removed subtitle completely since it's redundant in collapsed view */}
+                <p className="text-xs text-white/80 leading-tight hidden sm:block">
                   Intelligent FIR Assistance System
                 </p>
-
               </div>
             </div>
-            {/* Only show mobile close button */}
             <Button
               variant="ghost"
               size="sm"
@@ -113,7 +128,6 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
                   <span className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
                     {item.name}
                   </span>
-                  {/* Tooltip for collapsed state */}
                   {sidebarCollapsed && (
                     <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 lg:block hidden">
                       {item.name}
@@ -139,13 +153,12 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
             <Button
               variant="ghost"
               className={`w-full mt-3 text-white/80 hover:bg-white/10 hover:text-white transition-all duration-300 group relative ${sidebarCollapsed ? 'lg:px-2' : 'justify-start'}`}
-              onClick={() => window.location.href = '/police/login'}
+              onClick={handleLogout}
             >
               <LogOut className="h-4 w-4 flex-shrink-0" />
               <span className={`ml-2 transition-all duration-300 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
                 Logout
               </span>
-              {/* Tooltip for collapsed state */}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 lg:block hidden">
                   Logout
@@ -172,36 +185,27 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
                 <Menu className="h-5 w-5" />
               </Button>
               
-              {/* Desktop sidebar toggle button - Only one toggle */}
+              {/* 
+                 ENHANCED: Sidebar toggle button 
+                 - Removed text for cleaner look
+                 - Added Tooltip (title attribute)
+                 - Swapped icons for better visual cue
+              */}
               <Button
                 variant="ghost"
                 size="sm"
-                className="hidden lg:flex items-center space-x-2"
+                className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100"
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
               >
                 {sidebarCollapsed ? (
-                  <>
-                    <Menu className="h-5 w-5" />
-                    <span className="text-sm">Expand</span>
-                  </>
+                  <ChevronsRight className="h-5 w-5 text-gray-600" />
                 ) : (
-                  <>
-                    <X className="h-5 w-5" />
-                    <span className="text-sm">Collapse</span>
-                  </>
+                  <ChevronsLeft className="h-5 w-5 text-gray-600" />
                 )}
               </Button>
 
-
-              
-              {/* Search */}
-              <div className="relative max-w-md flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  placeholder="Search FIR by ID, case details..."
-                  className="pl-10 w-full sm:w-80"
-                />
-              </div>
+              {/* REMOVED: Search Bar as requested */}
             </div>
 
             <div className="flex items-center space-x-4">
@@ -228,9 +232,8 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   
-                  {/* Notification Items */}
                   <div className="max-h-96 overflow-y-auto">
-                    <DropdownMenuItem className="flex flex-col items-start p-3 cursor-pointer" onClick={() => window.location.href = '/police'}>
+                    <DropdownMenuItem className="flex flex-col items-start p-3 cursor-pointer" onClick={() => router.push('/police')}>
                       <div className="flex items-start space-x-3 w-full">
                         <div className="flex-shrink-0">
                           <div className="w-2 h-2 bg-blue-600 rounded-full mt-2"></div>
@@ -243,7 +246,7 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
                       </div>
                     </DropdownMenuItem>
                     
-                    <DropdownMenuItem className="flex flex-col items-start p-3 cursor-pointer" onClick={() => window.location.href = '/police'}>
+                    <DropdownMenuItem className="flex flex-col items-start p-3 cursor-pointer" onClick={() => router.push('/police')}>
                       <div className="flex items-start space-x-3 w-full">
                         <div className="flex-shrink-0">
                           <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
@@ -256,7 +259,7 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
                       </div>
                     </DropdownMenuItem>
                     
-                    <DropdownMenuItem className="flex flex-col items-start p-3 cursor-pointer" onClick={() => window.location.href = '/police/ai-suggestions'}>
+                    <DropdownMenuItem className="flex flex-col items-start p-3 cursor-pointer" onClick={() => router.push('/police/ai-suggestions')}>
                       <div className="flex items-start space-x-3 w-full">
                         <div className="flex-shrink-0">
                           <div className="w-2 h-2 bg-orange-600 rounded-full mt-2"></div>
@@ -271,7 +274,7 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
                   </div>
                   
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="cursor-pointer" onClick={() => window.location.href = '/police'}>
+                  <DropdownMenuItem className="cursor-pointer" onClick={() => router.push('/police')}>
                     <div className="flex items-center justify-between w-full">
                       <span className="text-sm">View all notifications</span>
                       <span className="text-xs text-blue-600">→</span>
@@ -309,7 +312,7 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-gray-700 hover:text-gray-900 hover:bg-gray-100">
+                  <DropdownMenuItem className="text-gray-700 hover:text-gray-900 hover:bg-gray-100" onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>

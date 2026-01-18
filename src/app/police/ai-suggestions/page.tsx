@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect,useRef  } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import PoliceLayout from '@/components/police-layout'
 import { 
   Brain, 
@@ -141,10 +141,11 @@ export default function AISuggestions() {
     }
   }, [searchParams, mounted])
 
+  // INTEGRATED BACKEND API CALL
+  // INTEGRATED BACKEND API CALL
   const analyzeComplaint = async (textToAnalyze: string) => {
     if (!textToAnalyze.trim()) {
       if (searchParams.get('complaint')) {
-        // If we came from FIR form but text is empty, show error
         alert('Complaint text is empty. Please go back and enter complaint details.')
         router.push('/police/register-fir')
       } else {
@@ -155,31 +156,48 @@ export default function AISuggestions() {
 
     setIsAnalyzing(true)
     try {
-      const response = await fetch('/api/ai-section-predict', {
+      const apiUrl = 'http://localhost:8081/api/laws/predict'; 
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ complaintText: textToAnalyze }),
+        body: JSON.stringify({ complaint: textToAnalyze }),
       })
 
-      const data = await response.json()
-      
-      if (data.success) {
-        setPredictions(data.predictions)
-        setComplaintText(textToAnalyze)
-        setActiveTab('results')
-        
-        if (data.fallback) {
-          alert('AI analysis completed using fallback system. For more accurate results, please try again later.')
-        }
-      } else {
-        throw new Error(data.error || 'Analysis failed')
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server returned ${response.status}: ${errorText}`);
       }
-    } catch (error) {
-      console.error('Analysis error:', error)
-      alert('Failed to analyze complaint. Please try again.')
-      // If we came from FIR form and analysis fails, offer to go back
+
+      const backendData = await response.json();
+      
+      // UPDATED MAPPING LOGIC HERE
+      const mappedPredictions: AIPrediction[] = backendData.map((item: any, index: number) => ({
+        id: item.id || `pred_${Date.now()}_${index}`,
+        
+        // FIX: Backend sends "matchPercentage" (e.g., 43), not "confidence"
+        confidence: item.matchPercentage || 0, 
+        
+        // Backend sends "section"
+        sectionNumber: item.section || 'N/A', 
+        title: item.title || item.section || 'Unknown',
+        description: item.description || 'No description available',
+        punishment: item.punishment || 'N/A',
+        category: item.category || 'Other',
+        officerAction: 'pending',
+        isManual: false
+      }))
+
+      setPredictions(mappedPredictions)
+      setComplaintText(textToAnalyze)
+      setActiveTab('results')
+      
+    } catch (error: any) {
+      console.error('Detailed Analysis error:', error)
+      alert(`Failed to analyze complaint.\nReason: ${error.message}`)
+      
       if (searchParams.get('complaint')) {
         setTimeout(() => {
           if (confirm('Would you like to go back to the FIR form?')) {

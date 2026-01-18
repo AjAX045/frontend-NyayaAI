@@ -49,13 +49,8 @@ export default function Header() {
     }
 
     updateIndicator()
-    
-    // Add a small delay to ensure the DOM is updated
     const timeoutId = setTimeout(updateIndicator, 100)
-    
-    // Handle window resize
     window.addEventListener('resize', updateIndicator)
-    
     return () => {
       clearTimeout(timeoutId)
       window.removeEventListener('resize', updateIndicator)
@@ -82,20 +77,17 @@ export default function Header() {
 
   return (
     <>
-      <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white/95 backdrop-blur-md shadow-md' : 'bg-white'
+      <header className={`fixed top-0 w-full z-50 transition-all duration-300 ease-in-out ${
+        isScrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-white'
       }`}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full">
+              <div className="flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full shadow-md transition-transform hover:scale-105">
                 <Shield className="h-6 w-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Nyaya AI</h1>
-                <p className="text-xs text-gray-600">Intelligent FIR Assistance System</p>
-              </div>
+              <h1 className="text-xl font-bold text-gray-900">Nyaya AI</h1>
             </Link>
 
             {/* Desktop Navigation */}
@@ -105,8 +97,8 @@ export default function Header() {
                   key={item.name}
                   ref={(el) => { navRefs.current[item.href] = el }}
                   href={item.href}
-                  className={`text-gray-700 hover:text-blue-600 transition-colors font-medium relative py-5 ${
-                    pathname === item.href ? 'text-blue-600' : ''
+                  className={`text-gray-700 hover:text-blue-600 transition-colors font-medium relative py-5 px-2 rounded-md hover:bg-gray-100 ${
+                    pathname === item.href ? 'text-blue-600 font-semibold' : ''
                   }`}
                 >
                   {item.name}
@@ -115,7 +107,7 @@ export default function Header() {
 
               {/* Animated Indicator */}
               {!hideCitizenLinks && (
-                <div 
+                <div
                   className="absolute bottom-0 h-1 bg-gradient-to-r from-blue-500 to-blue-700 rounded-full transition-all duration-300 ease-out shadow-lg"
                   style={{
                     left: `${indicatorStyle.left}px`,
@@ -126,21 +118,22 @@ export default function Header() {
               )}
             </nav>
 
-
-            {/* Right side buttons */}
+            {/* Right Buttons */}
             <div className="flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="hidden md:flex"
-                onClick={handlePolicePortalClick}
-              >
-                Police Portal
-              </Button>
+              {!hideCitizenLinks && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="hidden md:flex hover:bg-gray-100 transition"
+                  onClick={handlePolicePortalClick}
+                >
+                  Police Portal
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
-                className="md:hidden"
+                className="md:hidden p-2 hover:bg-gray-100 rounded transition"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
               >
                 {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -151,14 +144,14 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-        <div className="md:hidden bg-white border-t">
+        <div className="md:hidden bg-white border-t shadow-lg">
           <nav className="container mx-auto px-4 py-4 space-y-2">
             {!hideCitizenLinks && navItems.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`block py-2 text-gray-700 hover:text-blue-600 transition-colors font-medium ${
-                  pathname === item.href ? 'text-blue-600' : ''
+                className={`block py-2 px-3 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition ${
+                  pathname === item.href ? 'text-blue-600 font-semibold' : ''
                 }`}
                 onClick={() => setIsMenuOpen(false)}
               >
@@ -166,32 +159,33 @@ export default function Header() {
               </Link>
             ))}
 
-            {/* Police Portal button stays visible */}
-            <button
-              className="block py-2 text-blue-600 font-medium text-left w-full"
-              onClick={(e) => {
-                e.preventDefault()
-                setIsMenuOpen(false)
-                handlePolicePortalClick(e)
-              }}
-            >
-              Police Portal
-            </button>
+            {!hideCitizenLinks && (
+              <button
+                className="block py-2 px-3 rounded-md text-blue-600 hover:bg-gray-100 transition"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setIsMenuOpen(false)
+                  handlePolicePortalClick(e)
+                }}
+              >
+                Police Portal
+              </button>
+            )}
           </nav>
         </div>
-      )}
+        )}
 
       </header>
 
       {/* Police Portal Warning Dialog */}
       <Dialog open={showPoliceWarning} onOpenChange={setShowPoliceWarning}>
-        <DialogContent className="max-w-md bg-white border border-gray-200 shadow-xl">
+        <DialogContent className="max-w-md bg-white border border-gray-200 shadow-xl rounded-lg p-6">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
                 <AlertTriangle className="h-6 w-6 text-amber-600" />
               </div>
-              <DialogTitle className="text-xl">Police Portal Access</DialogTitle>
+              <DialogTitle className="text-xl font-semibold">Police Portal Access</DialogTitle>
             </div>
             <DialogDescription className="text-gray-600 text-base">
               This portal is restricted to <strong>authorized police personnel only</strong>. 
@@ -199,17 +193,17 @@ export default function Header() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="space-y-4 mt-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-sm">
               <h4 className="font-semibold text-amber-800 mb-2">⚠️ Important Notice:</h4>
-              <ul className="text-sm text-amber-700 space-y-1">
+              <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
                 <li>• Unauthorized access is prohibited by law</li>
                 <li>• All access attempts are logged and monitored</li>
                 <li>• Violators may face legal consequences</li>
               </ul>
             </div>
             
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
               <p className="text-sm text-blue-700">
                 <strong>Citizens:</strong> Please use the Public Awareness section for legal information and resources.
               </p>
@@ -226,7 +220,7 @@ export default function Header() {
             </Button>
             <Button 
               onClick={proceedToPolicePortal}
-              className="flex-1 bg-amber-600 hover:bg-amber-700"
+              className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
             >
               I Am Police Personnel
             </Button>

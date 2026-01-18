@@ -3,17 +3,8 @@
 import { useState } from 'react'
 import PoliceLayout from '@/components/police-layout'
 import { 
-  User, 
-  MapPin, 
-  Calendar, 
-  Clock, 
-  FileText, 
-  Brain,
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  AlertCircle,
-  Loader2
+  User, MapPin, Calendar, Clock, FileText, Brain,
+  ChevronLeft, ChevronRight, Check, AlertCircle, Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -111,33 +102,30 @@ export default function RegisterFIR() {
     if (!validateStep(2)) return
     
     setIsGeneratingAI(true)
-    
-    // Pass complaint text and FIR form data as URL parameters to AI suggestions page
+    // Simulate AI processing and navigate
     const encodedComplaint = encodeURIComponent(formData.complaintText)
     const encodedFirData = encodeURIComponent(JSON.stringify(formData))
-    
-    // Simulate processing time, then navigate
     setTimeout(() => {
       setIsGeneratingAI(false)
       router.push(`/police/ai-suggestions?complaint=${encodedComplaint}&firData=${encodedFirData}`)
-    }, 1000) // Reduced to 1 second for better UX
+    }, 1000)
   }
 
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return (
-          <Card>
+          <Card className="shadow-lg rounded-lg border border-gray-200">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+              <CardTitle className="flex items-center space-x-2 text-lg font-semibold text-gray-800">
                 <User className="h-5 w-5 text-blue-600" />
                 <span>Complainant Details</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm text-gray-600 mt-1">
                 Please provide information about the person filing the FIR
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="complainantName">Name *</Label>
@@ -146,13 +134,12 @@ export default function RegisterFIR() {
                     value={formData.complainantName}
                     onChange={(e) => handleInputChange('complainantName', e.target.value)}
                     placeholder="Enter full name"
-                    className={`bg-gray-50 ${errors.complainantName ? 'border-red-500' : ''}`}
+                    className={`bg-gray-50 border ${errors.complainantName ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400`}
                   />
                   {errors.complainantName && (
                     <p className="text-sm text-red-500">{errors.complainantName}</p>
                   )}
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="contactNumber">Contact Number *</Label>
                   <Input
@@ -161,13 +148,12 @@ export default function RegisterFIR() {
                     onChange={(e) => handleInputChange('contactNumber', e.target.value)}
                     placeholder="10-digit mobile number"
                     maxLength={10}
-                    className={`bg-gray-50 ${errors.contactNumber ? 'border-red-500' : ''}`}
+                    className={`bg-gray-50 border ${errors.contactNumber ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400`}
                   />
                   {errors.contactNumber && (
                     <p className="text-sm text-red-500">{errors.contactNumber}</p>
                   )}
                 </div>
-
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="address">Address *</Label>
                   <Input
@@ -175,7 +161,7 @@ export default function RegisterFIR() {
                     value={formData.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
                     placeholder="Complete address"
-                    className={`bg-gray-50 ${errors.address ? 'border-red-500' : ''}`}
+                    className={`bg-gray-50 border ${errors.address ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400`}
                   />
                   {errors.address && (
                     <p className="text-sm text-red-500">{errors.address}</p>
@@ -188,17 +174,17 @@ export default function RegisterFIR() {
 
       case 2:
         return (
-          <Card>
+          <Card className="shadow-lg rounded-lg border border-gray-200">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+              <CardTitle className="flex items-center space-x-2 text-lg font-semibold text-gray-800">
                 <FileText className="h-5 w-5 text-blue-600" />
                 <span>Incident Details</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm text-gray-600 mt-1">
                 Provide detailed information about the incident
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="incidentDate">Date *</Label>
@@ -207,13 +193,12 @@ export default function RegisterFIR() {
                     type="date"
                     value={formData.incidentDate}
                     onChange={(e) => handleInputChange('incidentDate', e.target.value)}
-                    className={`bg-gray-50 ${errors.incidentDate ? 'border-red-500' : ''}`}
+                    className={`bg-gray-50 border ${errors.incidentDate ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400`}
                   />
                   {errors.incidentDate && (
                     <p className="text-sm text-red-500">{errors.incidentDate}</p>
                   )}
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="incidentTime">Time *</Label>
                   <Input
@@ -221,13 +206,12 @@ export default function RegisterFIR() {
                     type="time"
                     value={formData.incidentTime}
                     onChange={(e) => handleInputChange('incidentTime', e.target.value)}
-                    className={`bg-gray-50 ${errors.incidentTime ? 'border-red-500' : ''}`}
+                    className={`bg-gray-50 border ${errors.incidentTime ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400`}
                   />
                   {errors.incidentTime && (
                     <p className="text-sm text-red-500">{errors.incidentTime}</p>
                   )}
                 </div>
-
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="location">Location *</Label>
                   <div className="relative">
@@ -237,23 +221,22 @@ export default function RegisterFIR() {
                       value={formData.location}
                       onChange={(e) => handleInputChange('location', e.target.value)}
                       placeholder="Enter incident location"
-                      className={`pl-10 bg-gray-50 ${errors.location ? 'border-red-500' : ''}`}
+                      className={`pl-10 bg-gray-50 border ${errors.location ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400`}
                     />
                   </div>
                   {errors.location && (
                     <p className="text-sm text-red-500">{errors.location}</p>
                   )}
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="incidentType">Type of Incident *</Label>
                   <Select value={formData.incidentType} onValueChange={(value) => handleInputChange('incidentType', value)}>
-                    <SelectTrigger className={`bg-white border-gray-300 text-gray-900 ${errors.incidentType ? 'border-red-500' : ''}`}>
+                    <SelectTrigger className={`bg-white border ${errors.incidentType ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400`}>
                       <SelectValue placeholder="Select incident type" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border-gray-300 text-gray-900">
+                    <SelectContent className="bg-white border border-gray-300 rounded mt-1">
                       {incidentTypes.map((type) => (
-                        <SelectItem key={type} value={type} className="text-gray-900 focus:bg-gray-100">{type}</SelectItem>
+                        <SelectItem key={type} value={type} className="px-3 py-2 hover:bg-gray-100">{type}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -261,7 +244,6 @@ export default function RegisterFIR() {
                     <p className="text-sm text-red-500">{errors.incidentType}</p>
                   )}
                 </div>
-
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="complaintText">Complaint Text *</Label>
                   <Textarea
@@ -270,7 +252,7 @@ export default function RegisterFIR() {
                     onChange={(e) => handleInputChange('complaintText', e.target.value)}
                     placeholder="Describe the incident in detail..."
                     rows={6}
-                    className={`bg-gray-50 ${errors.complaintText ? 'border-red-500' : ''}`}
+                    className={`bg-gray-50 border ${errors.complaintText ? 'border-red-500' : 'border-gray-300'} rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400`}
                   />
                   {errors.complaintText && (
                     <p className="text-sm text-red-500">{errors.complaintText}</p>
@@ -284,34 +266,34 @@ export default function RegisterFIR() {
       case 3:
         return (
           <div className="space-y-6">
-            <Alert>
-              <Brain className="h-4 w-4" />
+            <Alert variant="destructive" className="bg-yellow-50 border-l-4 border-yellow-400 p-4 flex items-center space-x-2">
+              <Brain className="h-4 w-4 text-yellow-600" />
               <AlertDescription>
                 AI is analyzing your complaint to suggest relevant legal sections...
               </AlertDescription>
             </Alert>
 
-            <Card>
+            <Card className="shadow-lg rounded-lg border border-gray-200">
               <CardHeader>
-                <CardTitle>Review & Submit</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-xl font-semibold text-gray-800 mb-2">Review & Submit</CardTitle>
+                <CardDescription className="text-sm text-gray-600 mb-4">
                   Review all information before submitting the FIR
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4">
+                {/* Summary of entered data */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-semibold mb-2 text-blue-600">Complainant Information</h4>
-                    <div className="space-y-1 text-sm">
+                    <h4 className="font-semibold mb-2 text-blue-600 text-lg">Complainant Information</h4>
+                    <div className="space-y-1 text-sm text-gray-700">
                       <p><span className="font-medium">Name:</span> {formData.complainantName}</p>
                       <p><span className="font-medium">Contact:</span> {formData.contactNumber}</p>
                       <p><span className="font-medium">Address:</span> {formData.address}</p>
                     </div>
                   </div>
-
                   <div>
-                    <h4 className="font-semibold mb-2 text-blue-600">Incident Information</h4>
-                    <div className="space-y-1 text-sm">
+                    <h4 className="font-semibold mb-2 text-blue-600 text-lg">Incident Information</h4>
+                    <div className="space-y-1 text-sm text-gray-700">
                       <p><span className="font-medium">Date:</span> {formData.incidentDate}</p>
                       <p><span className="font-medium">Time:</span> {formData.incidentTime}</p>
                       <p><span className="font-medium">Location:</span> {formData.location}</p>
@@ -319,14 +301,13 @@ export default function RegisterFIR() {
                     </div>
                   </div>
                 </div>
-
-                <Separator />
-
+                <Separator className="my-4" />
+                {/* Complaint Text */}
                 <div>
                   <h4 className="font-semibold mb-2 text-blue-600">Complaint Details</h4>
-                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
-                    {formData.complaintText}
-                  </p>
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-300 max-h-64 overflow-y-auto">
+                    <p className="text-sm text-gray-700 whitespace-pre-line">{formData.complaintText}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -340,87 +321,69 @@ export default function RegisterFIR() {
 
   return (
     <PoliceLayout>
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-6 max-w-5xl mx-auto bg-white rounded-lg shadow-md">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Register New FIR</h1>
-          <p className="text-gray-600">Fill in the details to file a First Information Report</p>
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Register New FIR</h1>
+          <p className="text-gray-600 text-sm">Fill in the details to file a First Information Report</p>
         </div>
 
         {/* Progress Bar */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
-                {currentStep > 1 ? <Check className="h-4 w-4" /> : '1'}
+          <div className="flex items-center justify-between mb-2 px-4">
+            {/* Step Indicators */}
+            {[1, 2, 3].map((step) => (
+              <div key={step} className="flex items-center space-x-2">
+                <div
+                  className={`w-10 h-10 flex items-center justify-center rounded-full border-2 ${
+                    currentStep >= step ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300 bg-gray-200 text-gray-600'
+                  }`}
+                >
+                  {currentStep > step ? <Check className="h-4 w-4" /> : step}
+                </div>
+                <span className={`text-sm font-medium ${currentStep >= step ? 'text-gray-900' : 'text-gray-500'}`}>
+                  {step === 1 ? 'FIR Details' : step === 2 ? 'AI Prediction' : 'Review'}
+                </span>
               </div>
-              <span className="text-sm font-medium">FIR Details</span>
-            </div>
-            
-            <div className="flex-1 h-1 bg-gray-200 mx-4">
-              <div 
-                className="h-full bg-blue-600 transition-all duration-300"
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
-                {currentStep > 2 ? <Check className="h-4 w-4" /> : '2'}
-              </div>
-              <span className="text-sm font-medium">AI Prediction</span>
-            </div>
-            
-            <div className="flex-1 h-1 bg-gray-200 mx-4">
-              <div 
-                className="h-full bg-blue-600 transition-all duration-300"
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                currentStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>
-                {currentStep > 3 ? <Check className="h-4 w-4" /> : '3'}
-              </div>
-              <span className="text-sm font-medium">Review</span>
-            </div>
+            ))}
           </div>
-          <p className="text-center text-sm text-gray-600">
+          {/* Progress Bar */}
+          <div className="w-full h-2 bg-gray-200 rounded-full">
+            <div
+              className="h-2 bg-blue-600 rounded-full transition-all duration-300"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+          {/* Step Description */}
+          <p className="text-center text-sm text-gray-600 mt-2">
             Step {currentStep} of {totalSteps}: {currentStep === 1 ? 'FIR Details' : currentStep === 2 ? 'AI Prediction' : 'Review'}
           </p>
         </div>
 
         {/* Form Content */}
-        <div className="mb-8">
-          {renderStepContent()}
-        </div>
+        <div className="mb-8">{renderStepContent()}</div>
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between">
+        <div className="flex justify-between flex-wrap gap-2">
           <Button
             variant="outline"
             onClick={handlePrevious}
             disabled={currentStep === 1}
+            className="flex items-center space-x-2"
           >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Previous
+            <ChevronLeft className="h-4 w-4" />
+            <span>Previous</span>
           </Button>
 
           {currentStep === 2 && (
             <Button
               onClick={handleGenerateAI}
               disabled={isGeneratingAI}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
             >
               {isGeneratingAI ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   Generating AI Prediction...
                 </>
               ) : (
@@ -432,10 +395,24 @@ export default function RegisterFIR() {
             </Button>
           )}
 
-          {currentStep === 1 && (
-            <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700">
-              Next
+          {currentStep < totalSteps && (
+            <Button
+              onClick={handleNext}
+              className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow"
+            >
+              <span>Next</span>
               <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          )}
+
+          {/* Optional: Add a Submit button on the review step */}
+          {currentStep === totalSteps && (
+            <Button
+              onClick={() => alert('FIR submitted!')} // Replace with actual submit logic
+              className="flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Submit FIR
             </Button>
           )}
         </div>
