@@ -35,6 +35,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import Link from 'next/link'
+import { jwtDecode } from 'jwt-decode';
+
+ 
 
 interface FIRData {
   id: string
@@ -58,9 +61,17 @@ export default function PoliceDashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        const token = localStorage.getItem("token");
+
         const statsRes = await fetch(
-          'http://localhost:8081/api/police/dashboard/stats'
+          'http://localhost:8081/api/police/dashboard/stats',
+          {
+            headers: {
+              "Authorization": `Bearer ${token}`
+            }
+          }
         )
+
         const statsData = await statsRes.json()
 
         setStats({
@@ -70,8 +81,14 @@ export default function PoliceDashboard() {
         })
 
         const recentRes = await fetch(
-          'http://localhost:8081/api/police/dashboard/recent-firs'
+          'http://localhost:8081/api/police/dashboard/recent-firs',
+          {
+            headers: {
+              "Authorization": `Bearer ${token}`
+            }
+          }
         )
+
         const recentData = await recentRes.json()
 
         const mappedRecentFIRs: FIRData[] = recentData.map((fir: any) => ({
@@ -95,11 +112,30 @@ export default function PoliceDashboard() {
     fetchDashboardData()
   }, [])
 
+  const token = localStorage.getItem('token');
+    let username = 'Officer';
+
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        console.log("Decoded token:", decoded);
+        username = decoded.sub || 'Officer';
+      } catch (err) {
+        console.error('Failed to decode token', err);
+      }
+    }
+
   const handleChangeStatus = async (id: string, status: 'PENDING' | 'SOLVED') => {
     try {
-      await fetch(`http://localhost:8081/api/police/dashboard/fir/${id}/status?status=${status}`, {
-        method: 'PATCH'
-      })
+      const token = localStorage.getItem("token");
+
+        await fetch(`http://localhost:8081/api/police/dashboard/fir/${id}/status?status=${status}`, {
+          method: 'PATCH',
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        })
+
 
       setRecentFIRs(prev =>
         prev.map(fir =>
@@ -107,7 +143,15 @@ export default function PoliceDashboard() {
         )
       )
 
-      const statsRes = await fetch('http://localhost:8081/api/police/dashboard/stats')
+      const statsRes = await fetch(
+        'http://localhost:8081/api/police/dashboard/stats',
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        }
+      )
+
       const statsData = await statsRes.json()
       setStats({
         totalFIRs: statsData.totalFirs,
@@ -142,6 +186,7 @@ export default function PoliceDashboard() {
       : <Clock className="h-4 w-4 text-yellow-600" />
   }
 
+
   if (isLoading) {
     return (
       <PoliceLayout>
@@ -162,7 +207,7 @@ export default function PoliceDashboard() {
       <div className="p-6 space-y-8">
         {/* Welcome Message */}
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Welcome, Officer Ajay</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Welcome, Officer {username}</h1>
           <p className="text-gray-600 text-sm md:text-base">Here's your dashboard overview</p>
         </div>
 

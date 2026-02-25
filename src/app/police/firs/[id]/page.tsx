@@ -41,10 +41,16 @@ export default function FIRDetails() {
   const fetchFIRDetails = async () => {
     setLoading(true)
     try {
+      const token = localStorage.getItem('token')
       // Attempt 1: Try specific ID endpoint
       let res;
       try {
-         res = await fetch(`http://localhost:8081/api/police/firs/${firId}`);
+         res = await fetch(`http://localhost:8081/api/police/firs/${firId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
          if (res.ok) {
            const data = await res.json();
            setFirData(data);
@@ -56,7 +62,12 @@ export default function FIRDetails() {
       }
 
       // Attempt 2: Fallback (Get all and filter)
-      const allRes = await fetch('http://localhost:8081/api/police/dashboard/all-firs');
+      const allRes = await fetch('http://localhost:8081/api/police/dashboard/all-firs', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
       if (!allRes.ok) throw new Error('Failed to load FIR data');
       const allData = await allRes.json();
       
@@ -77,8 +88,13 @@ export default function FIRDetails() {
 
     const handleDownloadPDF = async () => {
     try {
+      const token = localStorage.getItem('token')
       // Using the same base URL as your other fetch calls
-      const response = await fetch(`http://localhost:8081/api/firs/${firId}/pdf`);
+      const response = await fetch(`http://localhost:8081/api/firs/${firId}/pdf`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       
       if (!response.ok) {
         throw new Error('Failed to download PDF');

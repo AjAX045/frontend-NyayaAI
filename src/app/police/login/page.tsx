@@ -20,20 +20,50 @@ export default function PoliceLogin() {
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError('')
+  e.preventDefault()
+  setIsLoading(true)
+  setError('')
 
-    // Simulate API call
-    setTimeout(() => {
-      if (formData.username === 'admin' && formData.password === 'admin') {
-        router.push('/police')
-      } else {
-        setError('Invalid credentials. Please try again.')
-      }
-      setIsLoading(false)
-    }, 2000)
+  try {
+    const response = await fetch('http://localhost:8081/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    })
+
+    if (!response.ok) {
+      throw new Error('Invalid credentials')
+    }
+
+    const data = await response.json()
+
+    // 🔐 Store JWT
+    localStorage.setItem('token', data.token)
+
+    // ✅ Decode JWT to get role
+    const payload = JSON.parse(atob(data.token.split('.')[1]))
+
+    const role = payload.role
+    localStorage.setItem('role', role)
+
+    // ✅ Redirect based on role
+    if (role === 'ROLE_ADMIN') {
+      router.push('/admin')
+    } else if (role === 'ROLE_POLICE') {
+      router.push('/police')
+    } else {
+      setError('Unknown role. Contact administrator.')
+    }
+
+  } catch (err) {
+    setError('Invalid credentials. Please try again.')
+  } finally {
+    setIsLoading(false)
   }
+}
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -146,9 +176,9 @@ export default function PoliceLogin() {
               <p className="text-sm text-gray-600 font-medium">
                 For authorized police and admin only
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              {/* <p className="text-xs text-gray-500 mt-1">
                 Demo: username: admin, password: admin
-              </p>
+              </p> */}
             </div>
           </CardContent>
         </Card>

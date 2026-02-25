@@ -31,6 +31,8 @@ import {
 import { Separator } from '@/components/ui/separator'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { jwtDecode } from 'jwt-decode';
+
 
 const navigation = [
   { name: 'Dashboard', href: '/police', icon: LayoutDashboard },
@@ -62,10 +64,66 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
     // Save state whenever it changes
     localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed))
   }, [sidebarCollapsed])
+  
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      router.replace('/police/login')
+      return
+    }
+
+    try {
+      const decoded: any = jwtDecode(token)
+      const currentTime = Date.now() / 1000
+
+      if (decoded.exp < currentTime) {
+        localStorage.removeItem('token')
+        router.replace('/police/login')
+      }
+    } catch {
+      localStorage.removeItem('token')
+      router.replace('/police/login')
+    }
+  }, [])
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      router.replace('/police/login')
+    }
+  }, [])
+
 
   const handleLogout = () => {
-    router.push('/police/login')
+    // Remove auth token
+    localStorage.removeItem('token')
+
+    // Optional: clear all stored values if you store more
+    // localStorage.clear()
+
+    // Redirect to login
+    router.replace('/police/login')
   }
+
+
+  const [user, setUser] = useState<{ name: string, email: string }>({ name: 'Officer', email: 'police@domain.com' });
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        // According to your token, `sub` is username, `role`/`station` can also be used
+        setUser({
+          name: decoded.sub || 'Officer',
+          email: `${decoded.sub}@police.gov` // or use decoded.email if your token has it
+        });
+      } catch (err) {
+        console.error('Failed to decode token', err);
+      }
+    }
+  }, []);
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -146,7 +204,7 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
                 <AvatarFallback>OP</AvatarFallback>
               </Avatar>
               <div className={`flex-1 min-w-0 transition-all duration-300 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
-                <p className="text-sm font-medium text-white truncate">Officer Smith</p>
+                <p className="text-sm font-medium text-white truncate">Officer {user.name}</p>
                 <p className="text-xs text-white/70 truncate">Police Department</p>
               </div>
             </div>
@@ -289,16 +347,18 @@ export default function PoliceLayout({ children }: PoliceLayoutProps) {
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full text-gray-700 hover:text-gray-900 hover:bg-gray-100">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src="/avatars/police.png" alt="Profile" />
-                      <AvatarFallback>OP</AvatarFallback>
+                     <AvatarFallback>
+                        {user.name ? user.name.substring(0, 2).toUpperCase() : 'OP'}
+                     </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56 bg-white border-gray-200 text-gray-900" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">Officer Smith</p>
+                      <p className="text-sm font-medium leading-none">{user.name}</p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        officer.smith@police.gov
+                        {/* officer.smith@police.gov */}{user.email}
                       </p>
                     </div>
                   </DropdownMenuLabel>

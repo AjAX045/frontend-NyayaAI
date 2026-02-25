@@ -358,11 +358,17 @@ export default function AISuggestions() {
     }
 
     // 3️⃣ API call
+    const token = localStorage.getItem("token");
+
     const response = await fetch('http://localhost:8081/api/firs', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`   // 👈 ADD THIS
+      },
       body: JSON.stringify(firDataToSend)
-    })
+    });
+
 
     if (!response.ok) {
       throw new Error('Failed to save FIR')
